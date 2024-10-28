@@ -77,28 +77,37 @@ class EnergyForecastConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _are_valid_energy_meters(self, entity_ids: list[str]) -> bool:
         """Check if all energy meter entities are valid."""
-        registry = er.async_get(self.hass)
         for entity_id in entity_ids:
-            entity = registry.async_get(entity_id)
-            if entity is None:
-                return False
-            if entity.domain != "sensor" or entity.device_class != "energy":
-                return False
             state = self.hass.states.get(entity_id)
             if state is None:
+                _LOGGER.debug("Entity %s not found", entity_id)
                 return False
+                
+            # Check if the entity has the required attributes
+            attributes = state.attributes
+            if "unit_of_measurement" not in attributes:
+                _LOGGER.debug("Entity %s has no unit of measurement", entity_id)
+                return False
+                
             # Check if the unit is a valid energy unit
-            unit = state.attributes.get("unit_of_measurement")
+            unit = attributes.get("unit_of_measurement")
             if unit not in ENERGY_UNITS:
+                _LOGGER.debug("Entity %s has invalid unit: %s", entity_id, unit)
                 return False
+                
+            # Device class check is optional as some valid energy sensors might not have it
+            device_class = attributes.get("device_class")
+            if device_class and device_class != "energy":
+                _LOGGER.debug("Entity %s has wrong device class: %s", entity_id, device_class)
+                return False
+                
         return True
 
     async def _is_valid_calendar(self, entity_id: str) -> bool:
         """Check if the calendar entity is valid."""
         if not entity_id:
             return True
-        registry = er.async_get(self.hass)
-        entity = registry.async_get(entity_id)
-        if entity is None:
+        state = self.hass.states.get(entity_id)
+        if state is None:
             return False
-        return entity.domain == "calendar"
+        return state.domain == "calendar"</content>
