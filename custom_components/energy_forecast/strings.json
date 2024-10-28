@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energy Consumption Forecast Setup",
+        "description": "Set up energy consumption forecasting based on historical data",
+        "data": {
+          "power_meter": "Power Meter Entity",
+          "excluded_entities": "Entities to Exclude (Optional)",
+          "vacation_calendar": "Vacation Calendar"
+        }
+      }
+    },
+    "error": {
+      "invalid_power_meter": "Invalid power meter entity",
+      "invalid_calendar": "Invalid calendar entity"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}
