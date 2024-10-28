@@ -5,14 +5,16 @@
         "title": "Energy Consumption Forecast Setup",
         "description": "Set up energy consumption forecasting based on historical data",
         "data": {
-          "power_meter": "Power Meter Entity",
-          "excluded_entities": "Entities to Exclude (Optional)",
-          "vacation_calendar": "Vacation Calendar"
+          "energy_meters": "Energy Meter Entities (required)",
+          "excluded_entities": "Energy Meters to Exclude (Optional)",
+          "vacation_calendar": "Vacation Calendar (Optional)"
         }
       }
     },
     "error": {
-      "invalid_power_meter": "Invalid power meter entity",
+      "no_energy_meters": "At least one energy meter must be selected",
+      "invalid_energy_meters": "Invalid energy meter entities selected",
+      "invalid_excluded_entities": "Invalid excluded energy meter entities",
       "invalid_calendar": "Invalid calendar entity"
     },
     "abort": {

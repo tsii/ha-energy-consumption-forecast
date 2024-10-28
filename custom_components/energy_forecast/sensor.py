@@ -17,7 +17,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     DOMAIN,
-    CONF_POWER_METER,
+    CONF_ENERGY_METERS,
     CONF_EXCLUDED_ENTITIES,
     CONF_VACATION_CALENDAR,
 )
@@ -33,9 +33,9 @@ async def async_setup_entry(
     """Set up the Energy Consumption Forecast sensor."""
     _LOGGER.debug("Setting up Energy Forecast sensor with config: %s", config_entry.data)
     
-    power_meter = config_entry.data[CONF_POWER_METER]
+    energy_meters = config_entry.data[CONF_ENERGY_METERS]
     excluded_entities = config_entry.data.get(CONF_EXCLUDED_ENTITIES, [])
-    vacation_calendar = config_entry.data[CONF_VACATION_CALENDAR]
+    vacation_calendar = config_entry.data.get(CONF_VACATION_CALENDAR)
 
     forecaster = EnergyForecaster(hass)
     
@@ -43,7 +43,7 @@ async def async_setup_entry(
         EnergyForecastSensor(
             hass, 
             forecaster,
-            power_meter, 
+            energy_meters, 
             excluded_entities, 
             vacation_calendar
         )
@@ -52,8 +52,8 @@ async def async_setup_entry(
 class EnergyForecastSensor(SensorEntity):
     """Energy Consumption Forecast Sensor."""
 
-    _attr_native_unit_of_measurement = "W"
-    _attr_device_class = SensorDeviceClass.POWER
+    _attr_native_unit_of_measurement = "kWh"
+    _attr_device_class = SensorDeviceClass.ENERGY
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_should_poll = True
 
@@ -61,19 +61,19 @@ class EnergyForecastSensor(SensorEntity):
         self,
         hass: HomeAssistant,
         forecaster: EnergyForecaster,
-        power_meter: str,
+        energy_meters: list[str],
         excluded_entities: list[str],
-        vacation_calendar: str,
+        vacation_calendar: Optional[str],
     ) -> None:
         """Initialize the sensor."""
-        _LOGGER.debug("Initializing Energy Forecast sensor with power_meter: %s", power_meter)
+        _LOGGER.debug("Initializing Energy Forecast sensor with energy_meters: %s", energy_meters)
         self.hass = hass
         self.forecaster = forecaster
-        self._power_meter = power_meter
+        self._energy_meters = energy_meters
         self._excluded_entities = excluded_entities
         self._vacation_calendar = vacation_calendar
         self._attr_name = "Energy Consumption Forecast"
-        self._attr_unique_id = f"energy_forecast_{power_meter}"
+        self._attr_unique_id = f"energy_forecast_{'_'.join(energy_meters)}"
         self._forecast_data = {}
 
     @property
@@ -81,7 +81,7 @@ class EnergyForecastSensor(SensorEntity):
         """Return the state attributes."""
         return {
             "forecast": self._forecast_data,
-            "power_meter": self._power_meter,
+            "energy_meters": self._energy_meters,
             "excluded_entities": self._excluded_entities,
             "vacation_calendar": self._vacation_calendar,
         }
@@ -93,7 +93,7 @@ class EnergyForecastSensor(SensorEntity):
             now = dt_util.now()
             self._forecast_data = await self.forecaster.generate_forecast(
                 now,
-                self._power_meter,
+                self._energy_meters,
                 self._excluded_entities,
                 self._vacation_calendar,
             )

@@ -24,50 +24,54 @@ class EnergyForecaster:
     async def generate_forecast(
         self,
         current_time: datetime,
-        power_meter: str,
+        energy_meters: List[str],
         excluded_entities: List[str],
-        vacation_calendar: str,
+        vacation_calendar: Optional[str],
     ) -> Dict[str, float]:
         """Generate hourly consumption forecast for the next 24 hours."""
         _LOGGER.debug(
-            "Generating forecast for power_meter: %s, excluded_entities: %s, vacation_calendar: %s",
-            power_meter, excluded_entities, vacation_calendar
+            "Generating forecast for energy_meters: %s, excluded_entities: %s, vacation_calendar: %s",
+            energy_meters, excluded_entities, vacation_calendar
         )
         
         # Get historical data for the past 30 days
         start_date = current_time - timedelta(days=30)
         _LOGGER.debug("Fetching historical data from %s to %s", start_date, current_time)
         
-        # Get vacation dates
-        vacation_dates = await self._get_vacation_dates(vacation_calendar)
-        _LOGGER.debug("Found vacation dates: %s", vacation_dates)
+        # Get vacation dates if calendar is configured
+        vacation_dates = set()
+        if vacation_calendar:
+            vacation_dates = await self._get_vacation_dates(vacation_calendar)
+            _LOGGER.debug("Found vacation dates: %s", vacation_dates)
         
-        # Get historical statistics
-        stats = await self._get_historical_stats(
-            power_meter,
-            start_date,
-            current_time,
-            excluded_entities
-        )
-        _LOGGER.debug("Retrieved %d historical statistics entries", len(stats))
+        # Get historical statistics for all energy meters
+        combined_stats = {}
+        for meter in energy_meters:
+            if meter not in excluded_entities:
+                stats = await self._get_historical_stats(meter, start_date, current_time)
+                for stat in stats:
+                    timestamp = stat["start"]
+                    if timestamp in combined_stats:
+                        combined_stats[timestamp] = combined_stats[timestamp] + stat["sum"]
+                    else:
+                        combined_stats[timestamp] = stat["sum"]
         
-        if not stats:
-            _LOGGER.warning("No historical statistics found for entity: %s", power_meter)
+        if not combined_stats:
+            _LOGGER.warning("No historical statistics found for entities: %s", energy_meters)
             return {}
         
         # Process historical data into hourly averages
         weekday_hourly_avg = [[] for _ in range(24)]
         weekend_hourly_avg = [[] for _ in range(24)]
 
-        for stat in stats:
-            timestamp = dt_util.parse_datetime(stat["start"])
-            if timestamp.date() in vacation_dates:
+        for timestamp, value in combined_stats.items():
+            dt = dt_util.parse_datetime(timestamp)
+            if vacation_calendar and dt.date() in vacation_dates:
                 continue
 
-            value = stat["mean"]
-            hour = timestamp.hour
+            hour = dt.hour
             
-            if timestamp.weekday() < 5:  # Weekday
+            if dt.weekday() < 5:  # Weekday
                 weekday_hourly_avg[hour].append(value)
             else:  # Weekend
                 weekend_hourly_avg[hour].append(value)
@@ -123,14 +127,13 @@ class EnergyForecaster:
 
     async def _get_historical_stats(
         self,
-        power_meter: str,
+        entity_id: str,
         start_date: datetime,
         end_date: datetime,
-        excluded_entities: List[str],
     ) -> List[StatisticData]:
-        """Get historical statistics for the power meter."""
+        """Get historical statistics for the entity."""
         _LOGGER.debug("Fetching statistics for %s from %s to %s", 
-                     power_meter, start_date, end_date)
+                     entity_id, start_date, end_date)
         
         try:
             stats = await get_instance(self.hass).async_add_executor_job(
@@ -138,19 +141,18 @@ class EnergyForecaster:
                 self.hass,
                 start_date,
                 end_date,
-                {power_meter},
+                {entity_id},
                 "hour",
                 None,
-                {"mean"}
+                {"sum"}
             )
             
             _LOGGER.debug("Retrieved statistics: %s", stats)
             
-            # Filter out any excluded entities
-            if power_meter in stats:
-                return stats[power_meter]
+            if entity_id in stats:
+                return stats[entity_id]
             
-            _LOGGER.warning("No statistics found for power meter: %s", power_meter)
+            _LOGGER.warning("No statistics found for entity: %s", entity_id)
             return []
             
         except Exception as err:
