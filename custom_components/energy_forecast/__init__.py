@@ -8,6 +8,11 @@ from .const import DOMAIN
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["sensor"]
 
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up the Energy Consumption Forecast component."""
+    hass.data.setdefault(DOMAIN, {})
+    return True
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Energy Consumption Forecast from a config entry."""
     _LOGGER.debug("Setting up Energy Forecast integration with config: %s", entry.data)

@@ -1,5 +1,7 @@
 """Config flow for Energy Consumption Forecast integration."""
+import logging
 from typing import Any, Dict, Optional
+
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -18,6 +20,8 @@ from .const import (
     DEFAULT_NAME,
     ENERGY_UNITS,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 class EnergyForecastConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Energy Consumption Forecast."""
@@ -110,4 +114,4 @@ class EnergyForecastConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         state = self.hass.states.get(entity_id)
         if state is None:
             return False
-        return state.domain == "calendar"</content>
+        return state.domain == "calendar"
