@@ -50,14 +50,9 @@ class EnergyForecaster:
             if meter not in excluded_entities:
                 stats = await self._get_historical_stats(meter, start_date, current_time)
                 for stat in stats:
-                    # Ensure we have a datetime object for the start time
-                    if isinstance(stat["start"], str):
-                        start_time = dt_util.parse_datetime(stat["start"])
-                    else:
-                        start_time = stat["start"]
-                    
-                    if not isinstance(start_time, datetime):
-                        _LOGGER.warning("Invalid timestamp format: %s", start_time)
+                    # Convert timestamp to datetime
+                    start_time = self._parse_timestamp(stat.get("start"))
+                    if start_time is None:
                         continue
                     
                     if start_time in combined_stats:
@@ -110,6 +105,26 @@ class EnergyForecaster:
 
         _LOGGER.debug("Generated forecast: %s", forecast)
         return forecast
+
+    def _parse_timestamp(self, timestamp) -> Optional[datetime]:
+        """Parse timestamp from various formats."""
+        if isinstance(timestamp, datetime):
+            return timestamp
+        elif isinstance(timestamp, str):
+            try:
+                return dt_util.parse_datetime(timestamp)
+            except (ValueError, TypeError):
+                _LOGGER.warning("Failed to parse string timestamp: %s", timestamp)
+                return None
+        elif isinstance(timestamp, (int, float)):
+            try:
+                return datetime.fromtimestamp(timestamp, dt_util.UTC)
+            except (ValueError, TypeError):
+                _LOGGER.warning("Failed to parse numeric timestamp: %s", timestamp)
+                return None
+        else:
+            _LOGGER.warning("Unsupported timestamp format: %s (%s)", timestamp, type(timestamp))
+            return None
 
     async def _get_vacation_dates(self, calendar_entity_id: str) -> set:
         """Get vacation dates from calendar."""
