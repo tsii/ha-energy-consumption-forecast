@@ -114,4 +114,6 @@ class EnergyForecastConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         state = self.hass.states.get(entity_id)
         if state is None:
             return False
-        return state.domain == "calendar"
+        # Extract domain from entity_id instead of using state.domain
+        domain = entity_id.split('.')[0]
+        return domain == "calendar"

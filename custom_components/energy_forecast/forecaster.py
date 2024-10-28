@@ -50,16 +50,20 @@ class EnergyForecaster:
             if meter not in excluded_entities:
                 stats = await self._get_historical_stats(meter, start_date, current_time)
                 for stat in stats:
-                    # Convert string timestamp to datetime if needed
+                    # Ensure we have a datetime object for the start time
                     if isinstance(stat["start"], str):
-                        timestamp = dt_util.parse_datetime(stat["start"])
+                        start_time = dt_util.parse_datetime(stat["start"])
                     else:
-                        timestamp = stat["start"]
+                        start_time = stat["start"]
                     
-                    if timestamp in combined_stats:
-                        combined_stats[timestamp] = combined_stats[timestamp] + stat["sum"]
+                    if not isinstance(start_time, datetime):
+                        _LOGGER.warning("Invalid timestamp format: %s", start_time)
+                        continue
+                    
+                    if start_time in combined_stats:
+                        combined_stats[start_time] = combined_stats[start_time] + stat["sum"]
                     else:
-                        combined_stats[timestamp] = stat["sum"]
+                        combined_stats[start_time] = stat["sum"]
         
         if not combined_stats:
             _LOGGER.warning("No historical statistics found for entities: %s", energy_meters)
@@ -70,7 +74,6 @@ class EnergyForecaster:
         weekend_hourly_avg = [[] for _ in range(24)]
 
         for timestamp, value in combined_stats.items():
-            # timestamp is already a datetime object here
             if vacation_calendar and timestamp.date() in vacation_dates:
                 continue
 
@@ -162,4 +165,4 @@ class EnergyForecaster:
             
         except Exception as err:
             _LOGGER.exception("Error fetching statistics: %s", err)
-            return []
+            return []</content>
