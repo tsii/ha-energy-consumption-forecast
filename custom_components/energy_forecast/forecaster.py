@@ -50,7 +50,12 @@ class EnergyForecaster:
             if meter not in excluded_entities:
                 stats = await self._get_historical_stats(meter, start_date, current_time)
                 for stat in stats:
-                    timestamp = stat["start"]
+                    # Convert string timestamp to datetime if needed
+                    if isinstance(stat["start"], str):
+                        timestamp = dt_util.parse_datetime(stat["start"])
+                    else:
+                        timestamp = stat["start"]
+                    
                     if timestamp in combined_stats:
                         combined_stats[timestamp] = combined_stats[timestamp] + stat["sum"]
                     else:
@@ -65,13 +70,13 @@ class EnergyForecaster:
         weekend_hourly_avg = [[] for _ in range(24)]
 
         for timestamp, value in combined_stats.items():
-            dt = dt_util.parse_datetime(timestamp)
-            if vacation_calendar and dt.date() in vacation_dates:
+            # timestamp is already a datetime object here
+            if vacation_calendar and timestamp.date() in vacation_dates:
                 continue
 
-            hour = dt.hour
+            hour = timestamp.hour
             
-            if dt.weekday() < 5:  # Weekday
+            if timestamp.weekday() < 5:  # Weekday
                 weekday_hourly_avg[hour].append(value)
             else:  # Weekend
                 weekend_hourly_avg[hour].append(value)
