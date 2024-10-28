@@ -28,7 +28,6 @@ class EnergyForecaster:
         excluded_entities: List[str],
         vacation_calendar: Optional[str],
     ) -> Dict[str, float]:
-    ) -> Dict[str, float]:
         """Generate hourly consumption forecast for the next 24 hours."""
         _LOGGER.debug(
             "Generating forecast for energy_meters: %s, excluded_entities: %s, vacation_calendar: %s",
