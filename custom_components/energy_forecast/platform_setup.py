@@ -9,9 +9,10 @@ from .const import (
     CONF_ENERGY_METERS,
     CONF_EXCLUDED_ENTITIES,
     CONF_VACATION_CALENDAR,
+    SENSOR_TYPES,
 )
 from .forecaster import EnergyForecaster
-from .sensor_entity import EnergyForecastSensor
+from .sensor_entity import SENSOR_CLASSES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ async def setup_platform(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the platform with config entry."""
-    _LOGGER.debug("Setting up Energy Forecast sensor with config: %s", config_entry.data)
+    _LOGGER.debug("Setting up Energy Forecast sensors with config: %s", config_entry.data)
     
     energy_meters = config_entry.data[CONF_ENERGY_METERS]
     excluded_entities = config_entry.data.get(CONF_EXCLUDED_ENTITIES, [])
@@ -29,12 +30,18 @@ async def setup_platform(
 
     forecaster = EnergyForecaster(hass)
     
-    async_add_entities([
-        EnergyForecastSensor(
-            hass, 
-            forecaster,
-            energy_meters, 
-            excluded_entities, 
-            vacation_calendar
+    entities = []
+    for sensor_type in SENSOR_TYPES:
+        sensor_class = SENSOR_CLASSES[sensor_type]
+        entities.append(
+            sensor_class(
+                hass,
+                forecaster,
+                energy_meters,
+                excluded_entities,
+                vacation_calendar,
+                sensor_type
+            )
         )
-    ])
+    
+    async_add_entities(entities)

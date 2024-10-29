@@ -1,7 +1,7 @@
 {
   "domain": "energy_forecast",
   "name": "Energy Consumption Forecast",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "documentation": "https://github.com/tsii/ha-energy-forecast",
   "issue_tracker": "https://github.com/tsii/ha-energy-forecast/issues",
   "dependencies": ["recorder"],
