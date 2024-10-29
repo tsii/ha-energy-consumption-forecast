@@ -6,7 +6,8 @@ CONF_VACATION_CALENDAR = "vacation_calendar"
 
 DEFAULT_NAME = "Energy Consumption Forecast"
 
-ENERGY_UNITS = ["kWh", "Wh"]"""Constants for the Energy Consumption Forecast integration."""
+ENERGY_UNITS = ["kWh", "Wh"]
+"""Constants for the Energy Consumption Forecast integration."""
 from typing import Final
 
 DOMAIN: Final = "energy_forecast"
